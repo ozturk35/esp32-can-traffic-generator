@@ -83,19 +83,23 @@ esp_err_t mcp2515_init(mcp2515_t *dev)
     /* Enter normal mode */
     mcp2515_write_reg(dev, MCP_CANCTRL, MCP_MODE_NORMAL);
 
-    /* Poll for mode transition (MCP2515 needs 11 recessive bits on the bus) */
+    /* Poll for mode transition (MCP2515 needs 11 recessive bus bits). */
     int waited = 0;
-    while (waited < 50) {
+    while (waited < 2000) {
         vTaskDelay(pdMS_TO_TICKS(1));
         uint8_t stat = mcp2515_read_reg(dev, MCP_CANSTAT);
+        if ((waited % 200) == 0) {
+            ESP_LOGW(TAG, "Waiting for normal mode: CANSTAT=0x%02X (waited %d ms)", stat, waited);
+        }
         if ((stat & MCP_MODE_MASK) == MCP_MODE_NORMAL) {
-            ESP_LOGI(TAG, "Normal mode confirmed — 250 kbit/s J1939 ready");
+            ESP_LOGW(TAG, "Normal mode confirmed after %d ms — 250 kbit/s J1939 ready", waited);
             return ESP_OK;
         }
         waited++;
     }
 
-    ESP_LOGE(TAG, "Timeout waiting for normal mode — check CAN bus termination");
+    uint8_t final = mcp2515_read_reg(dev, MCP_CANSTAT);
+    ESP_LOGE(TAG, "Timeout: CANSTAT=0x%02X — CAN bus not responding", final);
     return ESP_FAIL;
 }
 

@@ -1,7 +1,6 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "driver/spi_master.h"
-#include "driver/uart.h"
 #include "esp_log.h"
 #include "mcp2515.h"
 #include "can_generator.h"
@@ -44,12 +43,10 @@ void app_main(void)
         vTaskSuspend(NULL);
     }
 
-    /* Boot banner */
-    esp_log_level_set("*", ESP_LOG_WARN); /* suppress INFO spam after banner */
-    uart_write_bytes(UART_NUM_0,
-        "\r\nCAN Traffic Generator — ready\r\n"
-        "J1939 250 kbit/s | PGNs: 61444 65262 65265 65276\r\n"
-        "Type 'help' for commands.\r\n> ", 90);
+    /* Boot banner — printf goes through console, no driver needed */
+    printf("\r\nCAN Traffic Generator — ready\r\n"
+           "J1939 250 kbit/s | PGNs: 61444 65262 65265 65276\r\n"
+           "Type 'help' for commands.\r\n> ");
 
     /* Start generator tasks and UART console */
     can_generator_init(&s_mcp);
